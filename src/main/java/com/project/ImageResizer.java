@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ImageResizer implements Runnable {
-    Logger LOGGER = Logger.getLogger(String.valueOf(ImageResizer.class));
+    private static final Logger LOGGER = Logger.getLogger(ImageResizer.class.getName());
 
     private final File[] files;
     private final int newWidth;
@@ -26,26 +26,26 @@ public class ImageResizer implements Runnable {
 
     @Override
     public void run() {
-
         for (File file : files) {
-            BufferedImage bufferedImage;
-
-            try {
-                bufferedImage = ImageIO.read(file);
-                if (bufferedImage == null) {
-                    continue;
-                }
-                int newHeigth = (int) Math.round
-                        (bufferedImage.getHeight() / (bufferedImage.getWidth() / (double) newWidth));
-
-                BufferedImage newImage = Scalr.resize(bufferedImage, Scalr.Method.ULTRA_QUALITY, newWidth, newHeigth);
-                File imgFile = new File(destination + "/" + file.getName());
-                ImageIO.write(newImage, "jpg", imgFile);
-
-            } catch (IOException | ArithmeticException e) {
-                e.printStackTrace();
-            }
+            resizeImage(file);
         }
-        LOGGER.log(Level.INFO, "thread stopped, images has been resizing successfully, time: " + (System.currentTimeMillis() - start) + " ms");
+        LOGGER.log(Level.INFO, "Thread stopped, images have been resized successfully, time: " + (System.currentTimeMillis() - start) + " ms");
+    }
+
+    private void resizeImage(File file) {
+        try {
+            BufferedImage originalImage = ImageIO.read(file);
+            if (originalImage == null) {
+                return;
+            }
+
+            int newHeight = (int) Math.round(originalImage.getHeight() / (originalImage.getWidth() / (double) newWidth));
+
+            BufferedImage resizedImage = Scalr.resize(originalImage, Scalr.Method.ULTRA_QUALITY, newWidth, newHeight);
+            File outputFile = new File(destination + "/" + file.getName());
+            ImageIO.write(resizedImage, "jpg", outputFile);
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.log(Level.SEVERE, "Error while resizing image: " + file.getName(), e);
+        }
     }
 }
